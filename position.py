@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 steps = 2000
 m = 1.0
@@ -15,10 +16,6 @@ velocity_y = 0.0
 velocity_x = 0.0
 dt = 0.01
 
-times = np.zeros(steps)
-x_positions = np.zeros(steps)
-y_positions = np.zeros(steps)
-
 print("starting at", y, "m, aiming for", target_y, "m")
 print("starting at", x, "m, aiming for", target_x, "m")
 
@@ -27,24 +24,33 @@ def pid(target, position, velocity, Kp, Kd):
     force = Kp * error - Kd * velocity
     return force
 
-for step in range(steps):
-    thrust_y = m * g + pid(target_y, y, velocity_y, Kp, Kd)
-    thrust_x = pid(target_x, x, velocity_x, Kp, Kd)
-    net_force_y = thrust_y - m * g
-    net_force_x = thrust_x
-    acceleration_y = net_force_y / m
-    acceleration_x = net_force_x / m
-    velocity_y = velocity_y + acceleration_y * dt
-    velocity_x = velocity_x + acceleration_x * dt
-    y = y + velocity_y * dt
-    x = x + velocity_x * dt
-    y_positions[step] = y
-    x_positions[step] = x
-    times[step] = step * dt
+def simulate(x, y, velocity_x, velocity_y, target_x, target_y, steps):
+    data = np.zeros((steps, 8))
+    for step in range(steps):
+        thrust_y = m * g + pid(target_y, y, velocity_y, Kp, Kd)
+        thrust_x = pid(target_x, x, velocity_x, Kp, Kd)
+        data[step] = [x, y, velocity_x, velocity_y, target_x, target_y, thrust_x, thrust_y]
+        net_force_y = thrust_y - m * g
+        net_force_x = thrust_x
+        acceleration_y = net_force_y / m
+        acceleration_x = net_force_x / m
+        velocity_y = velocity_y + acceleration_y * dt
+        velocity_x = velocity_x + acceleration_x * dt
+        y = y + velocity_y * dt
+        x = x + velocity_x * dt
 
-    if step % 100 == 0:
-        print(round(step * dt, 1), "s   y", round(y, 2), "m")
-        print(round(step * dt, 1), "s   x", round(x, 2), "m")
+        if step % 100 == 0:
+            print(round(step * dt, 1), "s   y", round(y, 2), "m")
+            print(round(step * dt, 1), "s   x", round(x, 2), "m")
+
+    return data
+
+
+data = simulate(x, y, velocity_x, velocity_y, target_x, target_y, steps)
+
+times = np.arange(steps) * dt
+y_positions = data[:, 1]
+x_positions = data[:, 0]
 
 plt.plot(times, y_positions, label="Y position")
 plt.plot(times, x_positions, label="X position")
